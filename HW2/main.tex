@@ -1,0 +1,176 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\usepackage[framed,numbered,autolinebreaks,useliterate]{mcode}
+\usepackage{url}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{18pt}
+
+\usepackage{graphicx}
+
+\title{\textbf{Numerical Analysis – Winter 2021}}
+\author{\textbf{3180100675}}
+\date{2021.12.2}
+
+\begin{document}
+
+\maketitle
+
+\section{Problem 1:}  
+
+Because $f(x)=-x^{3}-cos(x)$, $f^{'}(x)=-3x^{2}+sin(x)$, then refer to $P_{n}=P_{n-1}-\frac{f(P_{n-1})}{f^{'}(P_{n-1})}$, $p_{2}=-0.865684$. \\
+And due to $f^{'}(0)=0$, it is strictly forbidden to using $p_{0}=0$ to iterate!
+
+\section{Problem 2:}
+(\romannumeral1)
+Because $f(x)=b-\frac{1}{x}$, $f^{'}(x)=\frac{1}{x^{2}}$;
+Refer to this problem description, $\epsilon_{k}=\frac{\frac{1}{b}-x_{k}}{\frac{1}{b}}$, and then $x_{k+1}=x_{k}-\frac{b-\frac{1}{x_{k}}}{\frac{1}{x^2}}=-bx_{k}^{2}+2x_{k}$, so \\
+$|\epsilon_{k+1}|=|\frac{\frac{1}{b}-x_{k+1}}{\frac{1}{b}}|=$
+$|\frac{x_k^2-\frac{2x_k}{b}+\frac{1}{b^{2}}}{\frac{1}{b^2}}|$
+$=(\frac{x_k-\frac{1}{b}}{\frac{1}{b}})^2$
+$=\epsilon_k^2$
+
+(\romannumeral2)
+We know $g(x)=2x-bx^2$, so $g(x)$ is symmetry on line $x=\frac{1}{b}$. There i just need to proof it will converge on $x\in(0,\frac{1}{b})$. \\
+
+It is obvious that $g(x)-x=x-bx^2>0, x\in(0,\frac{1}{b})$, so $x<g(x)<\frac{1}{b}$. At the same time: $x_k=g(x_{k-1})$, therefore ${x_k}$ is a monotonic increasing sequence and infinitely approximate the upper bound $\frac{1}{b}$, and refer to the definition of array list, finally $x_k$ will converge to the real root $\frac{1}{b}$. \\
+
+Below is a figure that illustrates this idea, too!
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=5cm]{HW2-P2.jpg}
+\caption{Illumination of convergence}
+\end{figure}
+
+\section{Problem 3:}
+
+Appendix A is the Newton's Method Algorithm, i have debugged this code and get the right solution for these two nonlinear equations.\\
+Then applying this code and using $\textbf{x}^{(0)}=0$, finally i get: \\
+a. $\textbf{x}^{(2)}=[4.3509, 18.4912, -19.8421]^T$; \\
+b. $\textbf{x}^{(2)}=[0.5002, 0.2508, -0.5174]^T$;
+
+\section{Problem 4:} 
+Appendix B is the Steepest Descent Algorithm. I make good use of "solve" function in MATLAB, and acquire their exact solutions, then i choose corresponding initial values to ensure solving every solutions! Their roots are: \\
+a. (*) There exists 4 plural solutions which i didn't list below. \\
+root1 = [1.0380, 1.0803, 0.9303]; \\
+root2 = [-8.4400, -7.9400, -19.1438]; \\
+b. \\
+root1 = [0.2102, 0.3598, -1.4070]; \\
+root2 = [0.8407, -0.3583, 1.4079]; \\
+root3 = [0.8998, -0.9967, 0.5079]; \\
+root4 = [0.4962, 0.9967, -0.5076]; \\
+	 
+
+\newpage
+\appendix
+\section{Appendix A}
+
+\begin{lstlisting}
+clear; clc; close all;
+%% Functions define
+global f jacob;
+syms x1 x2 x3;
+% a.
+f1 = x1 ^ 2 + x2 - 37; % x(2) = 4.3509   18.4912  -19.8421
+f2 = x1 - x2 ^ 2 -5;
+f3 = x1 + x2 + x3 - 3;
+% b.
+% f1 = 3 * x1 - cos(x2 * x3) - 0.5; % x(2) = 0.5002    0.2508   -0.5174
+% f2 = 4 * x1 ^ 2 - 625 * x2 ^ 2 + 2 * x2  - 1;
+% f3 = exp(-x1 * x2) + 20 * x3 + (10 * pi - 3) / 3;
+jacobian = [diff(f1,x1), diff(f1,x2), diff(f1,x3);
+    diff(f2,x1), diff(f2,x2), diff(f2,x3);
+    diff(f3,x1), diff(f3,x2), diff(f3,x3)];
+f = matlabFunction([f1;f2;f3]);
+jacob = matlabFunction(jacobian);
+
+%% Main
+p0 = [0;0;0];
+MaxIteration = 100;
+Tolerance = 10^-10;
+oldP = p0;
+for i = 1:MaxIteration
+    fprintf("[No.%d Iteration]: F(", i); disp(oldP'); fprintf(") = ");
+    disp(F(oldP)');
+    if max(abs(F(oldP))) < Tolerance % using infinity norm to stop!
+        fprintf("It costs me %d iterations to find the root:\n", i);
+        disp(oldP');
+        break;
+    end
+    newP = NewTon(oldP);
+    oldP = newP;
+end
+
+%% My functions
+function Y = F(X)
+    global f;
+    Y = f(X(1),X(2),X(3));
+end
+function M = Jacob(X)
+    global jacob;
+    M = jacob(X(1),X(2)); % (i)
+%     M = jacob(X(1),X(2),X(3)); % (ii)
+end
+function Xk = NewTon(Xk_1)
+    Xk = Xk_1 - pinv(Jacob(Xk_1)) * F(Xk_1);
+end
+\end{lstlisting}
+
+\section{Appendix B}
+\begin{lstlisting}
+clear; clc; close all;
+%% Functions define
+global f dg;
+syms x1 x2 x3; 
+% a.
+f1 = 15 * x1 + x2 ^ 2 - 4 * x3 - 13; 
+f2 = x1 ^ 2 + 10 * x2 - x3 - 11;
+f3 = x2 ^ 3 - 25 * x3 + 22;
+% b.
+% f1 = 10 * x1 - 2 * x2 ^ 2 + x2 - 2 * x3 - 5;
+% f2 = 8 * x2 ^ 2 + 4 * x3 ^ 2  - 9;
+% f3 = 8 * x2 * x3 + 4;
+g = f1 ^ 2 + f2 ^ 2 + f3 ^ 2;
+DELTA_g = [diff(g,x1); diff(g,x2); diff(g,x3)];
+f = matlabFunction([f1;f2;f3]);
+dg = matlabFunction(DELTA_g);
+
+%% Main
+p0 = [1;1;1]; % (i) 1.0380    1.0803    0.9303
+% p0 = [-8.44;-7.94;-19.1438]; % (i) -8.4414    -7.9401    -19.1438
+% p0 = [1;0;-1]; % (ii) 0.2102    0.3598   -1.4070
+% p0 = [1;0;1]; % (ii) 0.8407   -0.3583    1.4079
+% p0 = [0;-1;1]; % (ii) 0.8998   -0.9967    0.5079
+% p0 = [0;1;-1]; % (ii) 0.4962    0.9967   -0.5076
+MaxIteration = 100;
+Tolerance = 0.05;
+oldP = p0;
+for i = 1:MaxIteration
+    fprintf("[No.%d Iteration]: F(", i); disp(oldP'); fprintf(") = ");
+    disp(F(oldP)');
+    if max(abs(F(oldP))) < Tolerance % using infinity norm to stop!
+        fprintf("It costs me %d iterations to find the root:\n", i);
+        disp(oldP');
+        break;
+    end
+    newP = Descent(oldP);
+    oldP = newP;
+end
+
+%% My functions
+function Y = F(X)
+    global f;
+    Y = f(X(1),X(2),X(3));
+end
+function M = DG(X)
+    global dg;
+    M = dg(X(1),X(2),X(3));
+end
+function Xk = Descent(Xk_1)
+    alpha = 0.001;
+    Xk = Xk_1 - alpha * DG(Xk_1);
+end
+\end{lstlisting}
+
+\end{document}
+
