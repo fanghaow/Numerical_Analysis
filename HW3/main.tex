@@ -1,0 +1,291 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\usepackage[framed,numbered,autolinebreaks,useliterate]{mcode}
+\usepackage{url}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{18pt}
+
+\usepackage{graphicx}
+
+\title{\textbf{Numerical Analysis – Winter 2021}}
+\author{\textbf{3180100675}}
+\date{2021.12.13}
+
+\begin{document}
+
+\maketitle
+
+\section{Problem 1:}  
+According to infinity norm definition: \\
+\begin{equation}
+    ||A||_{\infty} = \max_{1\leq i\leq n} \sum_{j=1}^n |a_{ij}|
+\end{equation}
+\\
+It is obviously that $||x-\widetilde{x}||_{\infty} = max(|x-\widetilde{x}|)$, so: \\
+\\
+a. \\
+$||x-\widetilde{x}||_{\infty} = 0.5$ \\
+$||A\widetilde{x}-b||_{\infty} = 0.3$ \\
+\\
+b. \\
+$||x-\widetilde{x}||_{\infty} = 0.9$ \\
+$||A\widetilde{x}-b||_{\infty} = 0.27$ \\
+
+\newpage
+\section{Problem 2:}
+Refer to "Lec05.pdf" Page 23 theorem 1: \\
+\begin{equation}
+    ||A||_{2} = [\rho(A^{T}A)]^{\frac{1}{2}}
+\end{equation}
+\\
+And because $A$ is a symmetric matrix, $A^{T} = A$, i only need to prove:
+\begin{equation}
+    \rho(A) = [\rho(A^{2})]^{\frac{1}{2}}
+\end{equation}
+\\
+If $\lambda$ is a eigenvalue of $A$, $Ax=\lambda x$, then $A^2x=AAx=A\lambda x=\lambda^2x$, so $\lambda^2$ is a corresponding eigenvalue of $A^2$. Therefore, $\rho(A^2)=max|\lambda^2|=max^2|\lambda|=\rho^2(A)$, equation(3) is proved. So $||A||_2=\rho(A)$.
+
+\section{Problem 3:}
+Appendix A is the Gaussian elimination Algorithm, i have debugged this code and get the approximating solution for these two linear equations. Also i test a non-unique equation and raise ERROR properly.\\
+Then applying this program and using scaled partial pivoting, finally i get: \\
+\\
+a. $\widetilde{x}=[10, 1]^T$; \\
+\\
+b. $\widetilde{x}=[-0.0559, 9.9860, 0.1429]^T$;
+
+\newpage
+\section{Problem 4:} 
+Appendix B is the Jacobi iterative Algorithm. I firstly using "triu", "tril" and "diag" internal functions in Matlab to get U, L and D; then Jacobi iteration is been applied so that x is gradually approximating the real solution, finally i also calculate the equation to ensure my algorithm is right. \\ 
+After debugging, my first three iteration results are : \\
+\\
+a. \\
+$x^{(1)} = [1.2500, -1.3333, 0.2000]$; \\
+$x^{(2)} = [1.6333, -0.9833, 0.2333]$; \\
+$x^{(3)} = [1.5542, -0.8667, -0.0600]$; \\
+\\
+b. \\
+$x^{(1)} = [-2, 2, 0]$; \\
+$x^{(2)} = [-1, 1, -1]$; \\
+$x^{(3)} = [-1.7500, 1.7500, -0.5000]$; \\
+
+\section{Problem 5:}
+Appendix C is the Gaussian-Seidel Algorithm. This time i can not utilize $x^{(k)} = D^{-1}(L+U)x^{(k-1)}+D^{-1}b$ to update in single step, what i did is to loop over all the roots and update every root using last updated root! \\
+After debugging, my solutions are: \\
+\\
+a. \\
+1. Gaussian-Seidel Algorithm: $\widetilde{root}=[0.0352, -0.2368, 0.6579]$ (7 iterations) \\
+2. Jacobi iterative Algorithm: $\widetilde{root}=[0.0351, -0.2369, 0.6578]$ (10 iterations) \\
+\\
+b. \\
+1. Gaussian-Seidel Algorithm: $\widetilde{root}=[0.9957, 0.9578, 0.7915]$ (6 iterations) \\
+2. Jacobi iterative Algorithm: $\widetilde{root}=[0.9957, 0.9579, 0.7916]$ (4 iterations) \\
+\\
+These two algorithm both get a good approximation of real root, and Gaussian-Seidel is converge faster than Jacobi iterative algorithm.
+
+\newpage
+\appendix
+\section{Appendix A}
+
+\begin{lstlisting}
+clc; clear;
+main();
+%% My functions
+function main()
+    % a Problem
+    A = [0.03 58.9;
+        5.31 -6.10];
+    b = [59.2; 47.0];
+    % b Problem
+%     A = [3.03 -12.1 14;
+%         -3.03 12.1 -7;
+%         6.11 -14.2 22];
+%     b = [-119; 120; -139];
+    result = Gaussion_elimination(A, b);
+    fprintf("Result :");
+    disp(result);
+end
+function root = Gaussion_elimination(Mat, b)
+    Aug_M = [Mat, b];
+    ROW = size(Mat,1); % normally COL == ROW
+    COL = size(Mat,2);
+    for i = 1:ROW-1
+        % Scaled Matrix [Normalization]
+        Aug_M = Aug_M ./ max(abs(Aug_M(:,1:COL)), [], 2);
+        [pivoted_V, index] = max(Aug_M(i:end, i)); % Pivoted Value
+        if (pivoted_V == 0)
+            fprintf("[ERROR]: No unique solution exists!\n");
+            return;
+        end
+        index = index + i - 1;
+        if (index ~= i) % Swap ith row and the indexth row
+            temp = Aug_M(i, :);
+            Aug_M(i, :) = Aug_M(index, :);
+            Aug_M(index, :) = temp;
+        end
+        % Substraction
+        subM = zeros(ROW, COL+1);
+        subM(i+1:end,:) = Aug_M(i, :) ./pivoted_V .* Aug_M(i+1:end,i);
+        Aug_M = Aug_M - subM;
+    end
+    % Backward subsitition
+    root = zeros(1, COL);
+    for i = 1:ROW
+        j = ROW - i + 1;
+        if (Aug_M(j,j) == 0)
+            fprintf("[ERROR]: No unique solution exists!\n");
+            return;
+        end
+        root(j) = (Aug_M(j,end) - sum(root(j+1:end) .* Aug_M(j,j+1:COL))) / Aug_M(j,j);
+    end
+end
+\end{lstlisting}
+
+\section{Appendix B}
+\begin{lstlisting}
+clc; clear; close all;
+%% Main
+main();
+%% My functions
+function main()
+    % a Problem
+%     A = [4 1 -1;
+%         -1 3 1;
+%         2 2 5];
+%     b = [5; -4; 1];
+    % b Problem
+    A = [-2 1 1/2;
+        1 -2 -1/2;
+        0 1 2];
+    b = [4; -4; 0];
+
+    result = Jacobi_iterative(A,b);
+    fprintf("Result :");
+    disp(result');
+end
+
+function root = Jacobi_iterative(A,b) % A = D - L - U
+    D = diag(diag(A));
+    L = -tril(A,-1);
+    U = -triu(A,1);
+    
+    n = size(A,1);
+    MaxIteration = 100;
+    TOL = 0.001;
+    oldRoot = zeros(n,1); % Init
+    newRoot = zeros(n,1);
+    for i = 1:MaxIteration
+        newRoot = pinv(D) * (L + U) * oldRoot + pinv(D) * b;
+        fprintf("No.%d iteration: x(%d) =", i, i);
+        disp(newRoot');
+        if (inf_norm(oldRoot - newRoot) / inf_norm(newRoot) < TOL)
+            fprintf("After %d iterations, i found the root!\n", i);
+            break;
+        end
+        oldRoot = newRoot; % Update
+    end
+    root = newRoot;
+    
+    if (i == MaxIteration)
+        fprintf("[Warn]: Maximum number of iterations exceeded\n");
+    end
+    fprintf("A * x - b =");
+    disp((A * root - b)');
+end
+
+function ret = inf_norm(V)
+    ret = max(abs(V));
+end
+\end{lstlisting}
+
+\section{Appendix C}
+\begin{lstlisting}
+clc; clear; close all;
+%% Main
+main();
+%% My functions
+function main()
+    % a Problem
+%     A = [3 -1 1;
+%         3 6 2;
+%         3 3 7];
+%     b = [1; 0; 4];
+    % b Problem
+    A = [10 -1 0;
+        -1 10 -2;
+        0 -2 10];
+    b = [9; 7; 6];
+    result = Jacobi_iterative(A,b);
+    fprintf("Jacobi Iterative Result :");
+    disp(result');
+    result = Gauss_Seidel(A,b);
+    fprintf("Gauss-Seidel Result :");
+    disp(result');
+end
+function root = Gauss_Seidel(A,b) % A = D - L - U
+    D = diag(diag(A));
+    L = -tril(A,-1);
+    U = -triu(A,1);
+    Update_A = pinv(D) * (L + U); % (n,n)
+    Update_b = pinv(D) * b; % (n,1)
+    n = size(A,1);
+    MaxIteration = 100;
+    TOL = 0.001;
+    oldRoot = zeros(n,1); % Init
+    newRoot = zeros(n,1);
+    for i = 1:MaxIteration
+        for j = 1:n
+            newRoot(j) = sum(newRoot' .* Update_A(j,:)) + Update_b(j);
+        end
+        fprintf("No.%d iteration: x(%d) =", i, i);
+        disp(newRoot');
+        if (inf_norm(oldRoot - newRoot) / inf_norm(newRoot) < TOL)
+            fprintf("After %d iterations, i found the root!\n", i);
+            break;
+        end
+        oldRoot = newRoot; % Update
+    end
+    root = newRoot;
+    if (i == MaxIteration)
+        fprintf("[Warn]: Maximum number of iterations exceeded\n");
+    end
+    fprintf("A * x - b =");
+    disp((A * root - b)');
+end
+function root = Jacobi_iterative(A,b) % A = D - L - U
+    D = diag(diag(A));
+    L = -tril(A,-1);
+    U = -triu(A,1);
+    
+    n = size(A,1);
+    MaxIteration = 100;
+    TOL = 0.001;
+    oldRoot = zeros(n,1); % Init
+    newRoot = zeros(n,1);
+    for i = 1:MaxIteration
+        newRoot = pinv(D) * (L + U) * oldRoot + pinv(D) * b;
+        fprintf("No.%d iteration: x(%d) =", i, i);
+        disp(newRoot');
+        if (inf_norm(oldRoot - newRoot) / inf_norm(newRoot) < TOL)
+            fprintf("After %d iterations, i found the root!\n", i);
+            break;
+        end
+        oldRoot = newRoot; % Update
+    end
+    root = newRoot;
+    
+    if (i == MaxIteration)
+        fprintf("[Warn]: Maximum number of iterations exceeded\n");
+    end
+    fprintf("A * x - b =");
+    disp((A * root - b)');
+end
+
+function ret = inf_norm(V)
+    ret = max(abs(V));
+end
+\end{lstlisting}
+
+
+\end{document}
+
